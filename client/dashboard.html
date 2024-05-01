@@ -1,0 +1,228 @@
+<html>
+
+<head>
+    <title>Dashboard</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" />
+</head>
+
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-6 col-md-10 col-12">
+                <div class="card mt-5 bg-light">
+                    <div class="card-body">
+                        <h5 class="card-title d-inline-block">List</h5>
+                        <button type="button" class="btn btn-success float-end" data-bs-toggle="modal"
+                            data-bs-target="#addDebit">Ekle</button>
+                        <hr>
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Araç</th>
+                                    <th>Personel</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                        <div class="alert alert-danger mt-3 mb-0 d-none" role="alert"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="addDebit" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <form id="addForm" action="http://localhost/bor/server/debit_list" class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5">Ekle</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <select class="form-control mb-3" name="vehicle_id" required="required">
+                        <option value="" disabled selected>Araç Seçiniz</option>
+                    </select>
+                    <select class="form-control" name="employee_id" required="required">
+                        <option value="" disabled selected>Personel Seçiniz</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Kapat</button>
+                    <button type="submit" class="btn btn-success">Ekle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editDebit" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <form id="editForm" action="#" class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5"></h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <select class="form-control" name="employee_id" required="required">
+                        <option value="" disabled selected>Personel Seçiniz</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Kapat</button>
+                    <button type="submit" class="btn btn-success">Güncelle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script>
+        const addModal = new bootstrap.Modal(document.getElementById("addDebit"), {});
+        const editModal = new bootstrap.Modal(document.getElementById("editDebit"), {});
+
+        $(document).ready(function () {
+            if (localStorage.getItem("token") === null) window.location.href = "index.html";
+
+            $.ajax({
+                type: "GET",
+                url: "http://localhost/bor/server/debit_list",
+                headers: { "Authorization": "Bearer " + localStorage.getItem("token") },
+                success: function (response) {
+                    if (response.list) {
+                        $.each(response.list, function (index, item) {
+                            $("table tbody").append(`<tr>
+                                <td>` + item.id + `</td>
+                                <td>` + item.v_name + `</td>
+                                <td>` + item.e_name + `</td>
+                                <td>
+                                    <button type="button" onClick="updateDebit(` + item.id + `, '` + item.v_name + `', ` + item.e_id + `)" class="btn btn-sm float-end btn-primary ms-1">Güncelle</button>
+                                    <button type="button" onClick="removeDebit(` + item.id + `)" class="btn btn-sm float-end btn-danger">Sil</button>
+                                </td>
+                            </tr>`);
+                        });
+                    }
+                },
+                error: function (xhr) {
+                    if (xhr.responseJSON.error) $(".alert-danger").removeClass("d-none").text(xhr.responseJSON.error)
+                }
+            });
+        });
+
+        $("#addForm").submit(function (e) {
+            e.preventDefault();
+            var form = $(this);
+            var actionUrl = form.attr('action');
+            $.ajax({
+                type: "POST",
+                url: actionUrl,
+                headers: { "Authorization": "Bearer " + localStorage.getItem("token") },
+                data: form.serialize(),
+                success: function (response) {
+                    window.location.href = "dashboard.html";
+                },
+                error: function (xhr) {
+                    if (xhr.responseJSON.error) {
+                        $(".alert-danger").removeClass("d-none").text(xhr.responseJSON.error);
+                        addModal.hide();
+                    }
+                }
+            });
+        });
+
+        document.getElementById("addDebit").addEventListener('show.bs.modal', () => {
+            $.ajax({
+                type: "GET",
+                url: "http://localhost/bor/server/vehicle_and_employee",
+                headers: { "Authorization": "Bearer " + localStorage.getItem("token") },
+                success: function (response) {
+                    if (response.vehicle_list && response.employee_list) {
+                        $("#addDebit").find("select[name='vehicle_id']").empty().append("<option value='' disabled selected>Araç Seçiniz</option>");
+                        $.each(response.vehicle_list, function (index, item) {
+                            $("#addDebit").find("select[name='vehicle_id']").append("<option value='" + item.id + "'>" + item.name + "</option>");
+                        });
+
+                        $("#addDebit").find("select[name='employee_id']").empty().append("<option value='' disabled selected>Personel Seçiniz</option>");
+                        $.each(response.employee_list, function (index, item) {
+                            $("#addDebit").find("select[name='employee_id']").append("<option value='" + item.id + "'>" + item.name + "</option>");
+                        });
+                    } else {
+                        $(".alert-danger").removeClass("d-none").text("Hata!")
+                    }
+                },
+                error: function (xhr) {
+                    if (xhr.responseJSON.error) $(".alert-danger").removeClass("d-none").text(xhr.responseJSON.error)
+                }
+            });
+        })
+
+        function removeDebit(id) {
+            $.ajax({
+                type: "DELETE",
+                url: "http://localhost/bor/server/debit_list/" + id,
+                headers: { "Authorization": "Bearer " + localStorage.getItem("token") },
+                success: function (response) {
+                    if (response.success) {
+                        window.location.href = "dashboard.html";
+                    } else {
+                        $(".alert-danger").removeClass("d-none").text("Hata!")
+                    }
+                },
+                error: function (xhr) {
+                    if (xhr.responseJSON.error) $(".alert-danger").removeClass("d-none").text(xhr.responseJSON.error)
+                }
+            });
+        }
+
+        function updateDebit(id, v_name, e_id) {
+            $.ajax({
+                type: "GET",
+                url: "http://localhost/bor/server/vehicle_and_employee",
+                headers: { "Authorization": "Bearer " + localStorage.getItem("token") },
+                success: function (response) {
+                    if (response.vehicle_list && response.employee_list) {
+                        $("#editDebit").find("select[name='employee_id']").empty().append("<option value='' disabled selected>Personel Seçiniz</option>");
+                        $.each(response.employee_list, function (index, item) {
+                            $("#editDebit").find("select[name='employee_id']").append("<option value='" + item.id + "' " + (e_id == item.id ? "disabled" : "") + ">" + item.name + "</option>");
+                        });
+
+                        $("#editDebit").find("h1").text(v_name);
+                        $("#editDebit").find("form").attr("action", "http://localhost/bor/server/debit_list/" + id);
+
+                        editModal.show();
+                    } else {
+                        $(".alert-danger").removeClass("d-none").text("Hata!")
+                    }
+                },
+                error: function (xhr) {
+                    if (xhr.responseJSON.error) $(".alert-danger").removeClass("d-none").text(xhr.responseJSON.error)
+                }
+            });
+        }
+
+        $("#editForm").submit(function (e) {
+            e.preventDefault();
+            var form = $(this);
+            var actionUrl = form.attr('action');
+            $.ajax({
+                type: "PUT",
+                url: actionUrl,
+                headers: { "Authorization": "Bearer " + localStorage.getItem("token") },
+                data: form.serialize(),
+                success: function (response) {
+                    window.location.href = "dashboard.html";
+                },
+                error: function (xhr) {
+                    if (xhr.responseJSON.error) {
+                        $(".alert-danger").removeClass("d-none").text(xhr.responseJSON.error);
+                        editModal.hide();
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

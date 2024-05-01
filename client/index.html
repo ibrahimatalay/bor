@@ -1,0 +1,54 @@
+<html>
+
+<head>
+    <title>Login Page</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" />
+</head>
+
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-4 col-md-6 col-12">
+                <div class="card mt-5 bg-light">
+                    <form id="loginForm" action="http://localhost/bor/server/login" class="card-body">
+                        <h5 class="card-title">Login</h5>
+                        <hr>
+                        <input type="text" class="form-control mb-3" name="username" placeholder="User" maxlength="64"
+                            required="required">
+                        <input type="password" class="form-control mb-3" name="password" placeholder="Password"
+                            maxlength="64" required="required">
+                        <button type="submit" class="btn btn-success">Login</button>
+                        <div class="alert alert-danger mt-3 mb-0 d-none" role="alert"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="functions.js"></script>
+    <script>
+        $("#loginForm").submit(function (e) {
+            e.preventDefault();
+            var form = $(this);
+            var actionUrl = form.attr('action');
+            $.ajax({
+                type: "POST",
+                url: actionUrl,
+                data: form.serialize(),
+                success: function (response) {
+                    if (response.token) {
+                        localStorage.setItem("token", response.token);
+                        window.location.href = "dashboard.html";
+                    }
+                },
+                error: function (xhr) {
+                    if (xhr.responseJSON.error) $(".alert-danger").removeClass("d-none").text(xhr.responseJSON.error)
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
